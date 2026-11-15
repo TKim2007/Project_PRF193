@@ -1,7 +1,6 @@
 # Online Course Enrollment & Certification
 
 A console program written in C++ that manages online courses, learner enrollments, progress and certificates.
-It is the Topic 05 project of course **PRF193** (class **IC2102**, Group 3, lecturer Phạm Minh Trí).
 
 ## Features
 
