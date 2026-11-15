@@ -1,0 +1,4 @@
+Free|CRS001|C++ Basics|Nguyen Van A|20|0
+Paid|CRS002|Data Structures with Python|Jane Doe|60|120.5
+Paid|CRS003|Web Design|Tran Thi B|30|99
+Free|CRS004|Digital Literacy|Le Van C|15|0
