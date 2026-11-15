@@ -1,75 +1,116 @@
-# Hệ thống Quản lý Khóa học Trực tuyến (Online Course Enrollment & Certification)
+# Online Course Enrollment & Certification
 
-PRF193 – Topic 05
+A console program written in C++ that manages online courses, learner enrollments, progress and certificates.
+It is the Topic 05 project of course **PRF193** (class **IC2102**, Group 3, lecturer Phạm Minh Trí).
 
-## 1. Cách build & chạy
+## Features
 
-```bash
-make        # biên dịch, sinh ra file thực thi course_app
-./course_app
-```
+**Course management**
+- Add a Free or Paid course (the ID `CRSxxx` is generated automatically)
+- Update title, instructor, duration and tuition fee
+- Delete a course (refused while the course still has learners)
+- Show all courses, show by category (Free / Paid)
+- Search by title or instructor (keyword can be a part of the text, upper/lower case is ignored)
+- Sort by tuition fee (ascending)
 
-Hoặc biên dịch tay:
-```bash
-g++ -std=c++17 -o course_app src/*.cpp
-```
+**Enrollment management**
+- Add a learner to a course (the ID `ENRxxx` is generated automatically, a learner cannot enroll in the same course twice)
+- Delete a learner (remove an enrollment)
+- Show all enrollments, search by learner name, sort by final score (high to low)
+- Update progress and final score; the certificate is issued automatically
+- Issue certificates for all eligible learners at once
 
-Chương trình tự động đọc `courses.dat` và `enrollments.dat` khi khởi động
-(nếu file chưa tồn tại, chương trình bắt đầu với danh sách rỗng), và tự
-động lưu lại khi bạn chọn "Lưu & Thoát" ở menu chính.
+**Report and files**
+- Report: number of learners of every course (`map<courseId, count>`)
+- Data is loaded from two text files when the program starts and saved when the user chooses *Save* or *Exit*
+- Damaged lines in the data files are skipped and counted, the program keeps running
 
-## 2. Kiến trúc & Class Diagram (mô tả bằng chữ)
+**Safe input**: every value is checked right after it is typed. A wrong value (for example title `-5`, name `Le 123`, date `2024-02-30`, progress `150`) shows an error message and the same question is asked again.
 
-```
-Course (abstract base)
- ├── FreeCourse    : đạt chứng chỉ khi progress >= 100%
- └── PaidCourse    : đạt chứng chỉ khi progress >= 100% VÀ finalScore >= 50
+## Certificate rules
 
-Enrollment
- └── liên kết learner <-> courseId, lưu progress/score/trạng thái chứng chỉ
-
-CourseManager
- ├── vector<shared_ptr<Course>>       courses
- ├── vector<shared_ptr<Enrollment>>   enrollments
- ├── map<string,int>                  enrollmentCountByCourse   (STL Map)
- └── template<T> searchBy / sortBy    (dùng chung cho Course lẫn Enrollment)
-
-FileManager
- └── đọc/ghi courses.dat & enrollments.dat (định dạng text, phân tách bằng '|')
-
-Exceptions.h
- ├── InvalidInputException  (dữ liệu sai định dạng/khoảng giá trị)
- ├── DuplicateException     (ID trùng, đăng ký trùng)
- └── NotFoundException      (không tìm thấy ID)
-
-main.cpp: menu console, gọi CourseManager + FileManager
-```
-
-## 3. Ánh xạ với 4 yêu cầu kỹ thuật của đề bài
-
-| Yêu cầu | Được hiện thực ở đâu |
+| Course type | Certificate is issued when |
 |---|---|
-| **OOP** (Encapsulation, Inheritance, Polymorphism) | `Course` là lớp trừu tượng, `FreeCourse`/`PaidCourse` kế thừa và override `isEligibleForCertificate()` — đây là điểm polymorphism chính, quyết định điều kiện cấp chứng chỉ khác nhau |
-| **STL** | `std::vector<shared_ptr<T>>` lưu danh sách; `std::map<string,int>` đếm số học viên/khóa học; `std::sort` trong template `sortBy` |
-| **Memory Management** | Toàn bộ Course/Enrollment được quản lý bằng `std::shared_ptr`, không có `new`/`delete` thủ công → không rò rỉ bộ nhớ |
-| **File Processing** | `FileManager::loadData()` gọi lúc khởi động, `saveData()` gọi lúc thoát |
-| **Exception Handling** | 3 exception tùy chỉnh, được `catch` ngay tại menu và in thông báo lỗi thân thiện, chương trình không bao giờ crash vì input sai |
-| **Template functions** | `CourseManager::searchBy<T>` và `sortBy<T>` dùng chung cho cả Course và Enrollment (Pattern Recognition — tái sử dụng 1 đoạn code cho 2 kiểu dữ liệu khác nhau) |
+| Free | progress = 100 |
+| Paid | progress >= 80 **and** final score >= 50 |
 
-## 4. Test case đã kiểm thử
+Progress and score are in the range 0 - 100. A Free course always has tuition fee = 0.
 
-- Thêm khóa học Free và Paid → hiển thị đúng loại, đúng học phí
-- Đăng ký học viên vào khóa học không tồn tại → `NotFoundException`
-- Đăng ký trùng learner + course → `DuplicateException`
-- Cập nhật tiến độ ngoài khoảng 0–100 → `InvalidInputException`
-- Cập nhật đủ điều kiện (Free: progress=100; Paid: progress=100 & score>=50)
-  → cờ `certificateIssued` tự động bật thành `Issued`
-- Lưu file, khởi động lại chương trình → dữ liệu được khôi phục đầy đủ,
-  bộ đếm ID (CRSxxx/ENRxxx) tiếp tục tăng đúng từ số lớn nhất đã lưu
+## Project structure
 
-## 5. Gợi ý mở rộng nếu muốn nâng điểm thêm
+```
+.
+├── main.cpp            # main menu and program loop
+├── ConsoleIO.h/.cpp    # menus, safe input (retry until valid), printing tables
+├── CourseManager.h/.cpp# data (vector, map) and business rules, template search/sort
+├── Course.h/.cpp       # Course (abstract), FreeCourse, PaidCourse + validation
+├── Enrollment.h/.cpp   # Enrollment + validation (date, progress, score)
+├── FileHelper.h/.cpp   # load and save courses.txt / enrollments.txt
+├── courses.txt         # sample data
+└── enrollments.txt     # sample data
+```
 
-- Thêm lớp `AuditLog` ghi lại lịch sử thay đổi (phục vụ AI Audit Log của báo cáo)
-- Thêm ràng buộc: không cho enroll vào khóa học đã đóng
-- Vẽ flowchart cho hàm `updateProgress()` — đây là hàm có nhánh rẽ rõ nhất
-  (rẽ theo loại khóa học → rẽ theo điều kiện đạt chứng chỉ)
+## What is used
+
+| Requirement | Where |
+|---|---|
+| OOP: encapsulation, inheritance, polymorphism | `Course` (abstract) → `FreeCourse`, `PaidCourse`; virtual `isEligibleForCertificate()` |
+| STL `vector` and `map` | `vector<shared_ptr<Course>>`, `vector<shared_ptr<Enrollment>>`, `map<string,int> enrollmentCount` |
+| Smart pointers | `shared_ptr`, `make_shared` (no `new` / `delete`) |
+| Templates | `findFirst`, `searchBy`, `sortBy` work for both Course and Enrollment; the rule is a named function (`isCheaper`, `hasHigherScore`, ...) |
+| Exceptions | `invalid_argument` (wrong value), `out_of_range` (not found), `runtime_error` (rule broken) |
+| File I/O | `courses.txt`, `enrollments.txt`, fields separated by `\|` |
+
+## Build and run
+
+You need a C++ compiler (g++ 5 or newer, C++11).
+
+```bash
+g++ -std=c++11 -Wall *.cpp -o online_course
+./online_course          # Windows: online_course.exe
+```
+
+Run the program in the folder that contains `courses.txt` and `enrollments.txt`.
+If a file does not exist the program starts with an empty list and creates it when saving.
+
+## Menu
+
+```
+MAIN MENU
+1. Course Management
+2. Enrollment Management
+3. Show Report
+4. Save Data
+0. Exit (saves automatically)
+```
+
+Course Management: 1 Add, 2 Update, 3 Delete, 4 Show All, 5 Search, 6 Show by Category, 7 Sort by Fee, 0 Back.
+Enrollment Management: 1 Add Learner, 2 Delete Learner, 3 Show All, 4 Search by Name, 5 Sort by Score, 6 Update Progress & Score, 7 Issue Certificates, 0 Back.
+
+## Data file format
+
+`courses.txt`: `Type|CourseID|Title|Instructor|Hours|Fee`
+```
+Free|CRS001|C++ Basics|Nguyen Van A|20|0
+Paid|CRS002|Data Structures with Python|Jane Doe|60|120.5
+```
+
+`enrollments.txt`: `EnrollmentID|Learner|CourseID|Date|Progress|Score|Certificate(0/1)`
+```
+ENR001|Pham Van D|CRS001|2026-09-10|100|0|1
+ENR003|Pham Van D|CRS002|2026-09-15|60|45|0
+```
+
+Note: the data files must use normal line endings of your system. Files saved with Windows (CRLF) endings can make every line invalid on Linux or macOS; convert them with `dos2unix` or `tr -d '\r'`.
+
+## Limitations
+
+- Names and titles accept English letters only (no Vietnamese accents)
+- IDs stop at `CRS999` and `ENR999`
+- Search finds the keyword inside the text only; bubble sort is slow for very long lists
+- Progress can be lowered later, and an issued certificate is never taken back
+- Data is stored in plain text files, one user at a time, console only
+
+## Author
+| Trần Nhựt Trọng Kim 
+
